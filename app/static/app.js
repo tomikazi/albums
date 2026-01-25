@@ -13,7 +13,7 @@ const state = {
   // Album view selection
   albumIndex: 0,
   // Slideshow
-  slide: { open: false, playing: true, speed: 7, timer: null, overlayTimer: null },
+  slide: { open: false, playing: true, speed: 7, timer: null, overlayTimer: null, fromTopView: false },
   // Album list visibility
   albumListHidden: false,
 };
@@ -303,23 +303,31 @@ function setSlidePlaying(playing) {
   }
 }
 
-function openSlideshow() {
+function openSlideshow(fromTopView = false) {
   state.slide.open = true;
+  state.slide.fromTopView = fromTopView;
   setVisible($("slideshow"), true);
   updateSlideImage();
   setSlidePlaying(true);
   showOverlay();
 }
 
-function closeSlideshow(backToAlbum = true) {
+function closeSlideshow(returnToPrevious = true) {
   if (!state.slide.open) return;
+  const wasFromTopView = state.slide.fromTopView;
   state.slide.open = false;
   if (state.slide.timer) clearInterval(state.slide.timer);
   state.slide.timer = null;
   clearTimeout(state.slide.overlayTimer);
   state.slide.overlayTimer = null;
   setVisible($("slideshow"), false);
-  if (backToAlbum) showAlbumView();
+  if (returnToPrevious) {
+    if (wasFromTopView) {
+      showTopView();
+    } else {
+      showAlbumView();
+    }
+  }
 }
 
 function clamp(n, lo, hi) {
@@ -360,6 +368,14 @@ async function initApp() {
   // Album list visibility toggle
   $("hideAlbumListBtn").onclick = () => toggleAlbumList();
   $("showAlbumListBtn").onclick = () => toggleAlbumList();
+
+  // Slideshow from top view
+  $("topPlayBtn").onclick = () => {
+    if (state.activeAlbum && state.photos.length > 0) {
+      state.albumIndex = 0;
+      openSlideshow(true);  // true = from top view
+    }
+  };
 
   // Album view buttons
   $("backBtn").onclick = () => showTopView();
