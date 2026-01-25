@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Photo Albums</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="album-icon.png">
+    <link rel="stylesheet" href="./app.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body>
+    <div id="root">
+      <div id="loginView" class="login">
+        <div class="loginCard">
+          <div class="brand">Photo Albums</div>
+          <div class="loginRow">
+            <input id="loginUsername" type="text" autocomplete="username" placeholder="Username" />
+          </div>
+          <div class="loginRow">
+            <input
+              id="loginPassword"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Password"
+            />
+          </div>
+          <div class="loginRow">
+            <button id="loginBtn" class="primary">Log in</button>
+          </div>
+          <div id="loginError" class="error" style="display: none"></div>
+        </div>
+      </div>
+
+      <div id="appView" class="app" style="display: none">
+        <div class="topbar">
+          <div class="title" id="appTitle">Photo Albums</div>
+          <div class="spacer"></div>
+          <button id="logoutBtn" class="iconBtn" title="Logout">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+
+        <!-- Top View -->
+        <div id="topView" class="split">
+          <div class="leftPane" id="topViewLeftPane">
+            <div class="paneHeader">
+              <span>Photo Albums</span>
+              <button id="hideAlbumListBtn" class="iconBtn" title="Hide album list">
+                <i data-lucide="list-indent-decrease"></i>
+              </button>
+            </div>
+            <div id="albumList" class="albumList"></div>
+          </div>
+          <div class="rightPane">
+            <div class="paneHeader paneHeaderThumbnails">
+              <button id="showAlbumListBtn" class="iconBtn" title="Show album list">
+                <i data-lucide="list-indent-increase"></i>
+              </button>
+              <span>Thumbnails</span>
+            </div>
+            <div id="thumbGrid" class="thumbGrid"></div>
+          </div>
+        </div>
+
+        <!-- Album View -->
+        <div id="albumView" class="split" style="display: none">
+          <div class="leftPane">
+            <div class="paneHeader">Thumbnails</div>
+            <div id="thumbStrip" class="thumbStrip"></div>
+          </div>
+          <div class="rightPane previewPane">
+            <div class="previewTop">
+              <button id="backBtn" class="iconBtn" title="Back">
+                <i data-lucide="arrow-left"></i>
+              </button>
+              <div class="previewTitle" id="albumTitle"></div>
+              <div class="spacer"></div>
+              <button id="downloadBtn" class="iconBtn" title="Download">
+                <i data-lucide="download"></i>
+              </button>
+              <button id="playBtn" class="iconBtn" title="Slideshow">
+                <i data-lucide="play"></i>
+              </button>
+            </div>
+
+            <div class="previewBody">
+              <button id="prevBtn" class="navBtn" title="Previous">
+                <i data-lucide="chevron-left"></i>
+              </button>
+              <img id="previewImg" class="previewImg" alt="" />
+              <button id="nextBtn" class="navBtn" title="Next">
+                <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Preview modal (Top View) -->
+        <div id="quickPreview" class="modal" style="display: none">
+          <div class="modalBackdrop"></div>
+          <div class="modalCard">
+            <div class="modalTop">
+              <div class="modalTitle" id="quickTitle"></div>
+              <div class="spacer"></div>
+              <button id="quickDownloadBtn" class="iconBtn" title="Download">
+                <i data-lucide="download"></i>
+              </button>
+              <button id="quickCloseBtn" class="iconBtn" title="Close">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+            <div class="modalBody">
+              <button id="quickPrevBtn" class="navBtn" title="Previous">
+                <i data-lucide="chevron-left"></i>
+              </button>
+              <img id="quickImg" class="previewImg" alt="" />
+              <button id="quickNextBtn" class="navBtn" title="Next">
+                <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slideshow -->
+        <div id="slideshow" class="slideshow" style="display: none">
+          <img id="slideImg" class="slideImg" alt="" />
+          <div id="slideOverlay" class="slideOverlay hidden">
+            <div class="overlayRow">
+              <button id="slidePrevBtn" class="iconBtn" title="Previous">
+                <i data-lucide="chevron-left"></i>
+              </button>
+              <button id="slideNextBtn" class="iconBtn" title="Next">
+                <i data-lucide="chevron-right"></i>
+              </button>
+              <div class="spacer"></div>
+              <span id="slidePhotoTitle" class="slidePhotoTitle"></span>
+              <div class="spacer"></div>
+              <button id="slidePausePlayBtn" class="iconBtn" title="Pause/Play">
+                <i data-lucide="pause"></i>
+              </button>
+              <button id="slideCloseBtn" class="iconBtn" title="Close">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+          </div>
+          <div id="slideToast" class="slideToast hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+    <script>
+      // Replace lucide placeholders after initial render
+      window.addEventListener("load", () => {
+        if (window.lucide) window.lucide.createIcons();
+      });
+    </script>
+  </body>
+</html>
+

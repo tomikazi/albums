@@ -1,0 +1,28 @@
+[project]
+name = "albums"
+version = "0.1.0"
+description = "Lightweight photo albums web app with on-demand thumbnails/previews/enhancements"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pillow>=10.4.0",
+  "python-multipart>=0.0.9",
+]
+
+[build-system]
+requires = ["setuptools>=69.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.6.0",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+

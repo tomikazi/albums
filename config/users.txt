@@ -1,0 +1,4 @@
+# One user per line: username:password
+kids:babicka
+tom:ufo
+
