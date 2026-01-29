@@ -3,7 +3,6 @@ from __future__ import annotations
 import mimetypes
 import os
 from pathlib import Path
-from typing import Optional
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
@@ -54,12 +53,20 @@ def app_js() -> FileResponse:
     p = Path(__file__).parent / "static" / "app.js"
     return FileResponse(p, media_type="text/javascript")
 
-
 @router.get("/app.css")
 def app_css() -> FileResponse:
     p = Path(__file__).parent / "static" / "app.css"
     return FileResponse(p, media_type="text/css")
 
+@router.get("/album-icon.png")
+def album_icon_png() -> FileResponse:
+    p = Path(__file__).parent / "static" / "album-icon.png"
+    return FileResponse(p, media_type="image/png")
+
+@router.get("/favicon.png")
+def favicon_png() -> FileResponse:
+    p = Path(__file__).parent / "static" / "favicon.png"
+    return FileResponse(p, media_type="image/png")
 
 @router.get("/health")
 def health() -> dict[str, str]:
@@ -123,20 +130,13 @@ def album_contents(album: str, username: str = Depends(_current_user)) -> list[s
     return photos
 
 
-def _bool_param(v: Optional[str]) -> bool:
-    if v is None:
-        return False
-    return v.lower() in {"1", "true", "yes", "on"}
-
-
-def _serve_image(*, album: str, photo: str, enhanced: bool, kind: str) -> FileResponse:
+def _serve_image(*, album: str, photo: str, kind: str) -> FileResponse:
     try:
         paths = resolve_paths(
             albums_source_dir=ALBUMS_SOURCE_DIR,
             cache_dir=CACHE_DIR,
             album=album,
             photo=photo,
-            enhanced=enhanced,
             kind=kind,  # type: ignore[arg-type]
         )
     except ValueError:
@@ -145,30 +145,27 @@ def _serve_image(*, album: str, photo: str, enhanced: bool, kind: str) -> FileRe
     if not paths.source_path.exists():
         raise HTTPException(status_code=404, detail="Photo not found")
 
-    served_path = ensure_artifact(paths=paths, kind=kind, enhanced=enhanced)
+    served_path = ensure_artifact(paths=paths, kind=kind)
     media_type = mimetypes.guess_type(str(served_path))[0] or paths.content_type
     return FileResponse(served_path, media_type=media_type)
 
 
 @router.get("/thumbnails/{album}/{photo}")
-def thumbnails(album: str, photo: str, request: Request, username: str = Depends(_current_user)) -> FileResponse:
+def thumbnails(album: str, photo: str, username: str = Depends(_current_user)) -> FileResponse:
     _ = username
-    enhanced = _bool_param(request.query_params.get("enhanced"))
-    return _serve_image(album=album, photo=photo, enhanced=enhanced, kind="thumbnail")
+    return _serve_image(album=album, photo=photo, kind="thumbnail")
 
 
 @router.get("/previews/{album}/{photo}")
-def previews(album: str, photo: str, request: Request, username: str = Depends(_current_user)) -> FileResponse:
+def previews(album: str, photo: str, username: str = Depends(_current_user)) -> FileResponse:
     _ = username
-    enhanced = _bool_param(request.query_params.get("enhanced"))
-    return _serve_image(album=album, photo=photo, enhanced=enhanced, kind="preview")
+    return _serve_image(album=album, photo=photo, kind="preview")
 
 
 @router.get("/download/{album}/{photo}")
-def download(album: str, photo: str, request: Request, username: str = Depends(_current_user)) -> FileResponse:
+def download(album: str, photo: str, username: str = Depends(_current_user)) -> FileResponse:
     _ = username
-    enhanced = _bool_param(request.query_params.get("enhanced"))
-    resp = _serve_image(album=album, photo=photo, enhanced=enhanced, kind="full")
+    resp = _serve_image(album=album, photo=photo, kind="full")
     resp.headers["Content-Disposition"] = f'attachment; filename="{photo}"'
     return resp
 

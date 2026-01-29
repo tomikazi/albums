@@ -7,9 +7,8 @@ const state = {
   albums: [],
   activeAlbum: null, // {id,title}
   photos: [],
-  enhanced: false,
   // Top quick preview
-  quick: { open: false, index: 0, enhanced: false },
+  quick: { open: false, index: 0 },
   // Album view selection
   albumIndex: 0,
   // Slideshow
@@ -38,11 +37,10 @@ async function api(path, opts = {}) {
   return res.text();
 }
 
-function imgUrl(kind, albumId, photoName, enhanced) {
-  const q = enhanced ? "?enhanced=true" : "";
-  if (kind === "thumbnail") return `${BASE_PATH}/thumbnails/${encodeURIComponent(albumId)}/${encodeURIComponent(photoName)}${q}`;
-  if (kind === "preview") return `${BASE_PATH}/previews/${encodeURIComponent(albumId)}/${encodeURIComponent(photoName)}${q}`;
-  return `${BASE_PATH}/download/${encodeURIComponent(albumId)}/${encodeURIComponent(photoName)}${q}`;
+function imgUrl(kind, albumId, photoName) {
+  if (kind === "thumbnail") return `${BASE_PATH}/thumbnails/${encodeURIComponent(albumId)}/${encodeURIComponent(photoName)}`;
+  if (kind === "preview") return `${BASE_PATH}/previews/${encodeURIComponent(albumId)}/${encodeURIComponent(photoName)}`;
+  return `${BASE_PATH}/download/${encodeURIComponent(albumId)}/${encodeURIComponent(photoName)}`;
 }
 
 function setVisible(el, visible) {
@@ -121,7 +119,7 @@ function renderThumbGrid() {
     div.className = "thumb";
     const img = document.createElement("img");
     img.loading = "lazy";
-    img.src = imgUrl("thumbnail", albumId, name, false);
+    img.src = imgUrl("thumbnail", albumId, name);
     const cap = document.createElement("div");
     cap.className = "cap";
     cap.textContent = name;
@@ -143,7 +141,7 @@ function renderThumbStrip() {
     div.className = "thumb" + (i === state.albumIndex ? " selected" : "");
     const img = document.createElement("img");
     img.loading = "lazy";
-    img.src = imgUrl("thumbnail", albumId, name, false);
+    img.src = imgUrl("thumbnail", albumId, name);
     const cap = document.createElement("div");
     cap.className = "cap";
     cap.textContent = name;
@@ -158,8 +156,8 @@ function updatePreviewImage() {
   const albumId = state.activeAlbum?.id;
   if (!albumId || state.photos.length === 0) return;
   const name = state.photos[state.albumIndex];
-  $("previewImg").src = imgUrl("preview", albumId, name, state.enhanced);
-  $("downloadBtn").onclick = () => window.open(imgUrl("download", albumId, name, state.enhanced), "_blank");
+  $("previewImg").src = imgUrl("preview", albumId, name);
+  $("downloadBtn").onclick = () => window.open(imgUrl("download", albumId, name), "_blank");
   $("albumTitle").textContent = `${state.activeAlbum.title} — ${name}`;
   // update strip selection style
   renderThumbStrip();
@@ -197,7 +195,6 @@ async function selectAlbum(albumId, goAlbumView) {
 function openQuickPreview(index) {
   state.quick.open = true;
   state.quick.index = index;
-  state.quick.enhanced = state.enhanced;
   setVisible($("quickPreview"), true);
   renderQuickPreview();
 }
@@ -211,10 +208,10 @@ function renderQuickPreview() {
   const albumId = state.activeAlbum?.id;
   if (!albumId || state.photos.length === 0) return;
   const name = state.photos[state.quick.index];
-  $("quickImg").src = imgUrl("preview", albumId, name, state.quick.enhanced);
+  $("quickImg").src = imgUrl("preview", albumId, name);
   $("quickTitle").textContent = `${state.activeAlbum.title} — ${name}`;
   $("quickDownloadBtn").onclick = () =>
-    window.open(imgUrl("download", albumId, name, state.quick.enhanced), "_blank");
+    window.open(imgUrl("download", albumId, name), "_blank");
 }
 
 function quickPrev() {
@@ -264,7 +261,7 @@ function updateSlideImage() {
   const name = state.photos[state.albumIndex];
   const img = $("slideImg");
   if (img) {
-    img.src = imgUrl("download", albumId, name, state.enhanced);
+    img.src = imgUrl("download", albumId, name);
   }
   if (titleEl) titleEl.textContent = name || "";
 }

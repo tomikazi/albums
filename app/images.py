@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image
 
 
 ArtifactKind = Literal["thumbnail", "preview", "full"]
@@ -52,7 +52,6 @@ def resolve_paths(
     cache_dir: Path,
     album: str,
     photo: str,
-    enhanced: bool,
     kind: ArtifactKind,
 ) -> ImagePaths:
     album = _safe_rel_part(album)
@@ -67,28 +66,19 @@ def resolve_paths(
     ext = source_path.suffix.lower()
     content_type = "image/jpeg" if ext in {".jpg", ".jpeg"} else "image/png" if ext == ".png" else "image/webp"
 
-    if kind == "full" and not enhanced:
+    if kind == "full":
         # for originals, serve from source directly, no cache
         return ImagePaths(source_path=source_path, cache_path=source_path, content_type=content_type)
 
-    variant_root = cache_dir / ("enhanced" if enhanced else "original") / "albums" / album
+    cache_root = cache_dir / "original" / "albums" / album
     if kind == "thumbnail":
-        cache_path = variant_root / "thumbnails" / photo
+        cache_path = cache_root / "thumbnails" / photo
     elif kind == "preview":
-        cache_path = variant_root / "previews" / photo
+        cache_path = cache_root / "previews" / photo
     else:
-        cache_path = variant_root / "full" / photo
+        cache_path = cache_root / "full" / photo
 
     return ImagePaths(source_path=source_path, cache_path=cache_path, content_type=content_type)
-
-
-def _enhance_image(img: Image.Image) -> Image.Image:
-    # Subtle, generally-safe enhancement for scanned pages
-    img = ImageOps.autocontrast(img)
-    img = ImageEnhance.Contrast(img).enhance(1.12)
-    img = ImageEnhance.Sharpness(img).enhance(1.25)
-    img = img.filter(ImageFilter.UnsharpMask(radius=1.6, percent=140, threshold=3))
-    return img
 
 
 def _resize_to_fit(img: Image.Image, max_px: int) -> Image.Image:
@@ -105,7 +95,6 @@ def ensure_artifact(
     *,
     paths: ImagePaths,
     kind: ArtifactKind,
-    enhanced: bool,
     max_thumb_px: int = 200,
     max_preview_px: int = 1600,
 ) -> Path:
@@ -113,7 +102,7 @@ def ensure_artifact(
     Ensures the artifact exists at paths.cache_path (or paths.source_path for original full).
     Returns the path to serve.
     """
-    if kind == "full" and not enhanced:
+    if kind == "full":
         return paths.source_path
 
     if paths.cache_path.exists():
@@ -125,16 +114,10 @@ def ensure_artifact(
         img.load()
         img = img.convert("RGB") if img.mode not in {"RGB", "L"} else img.convert("RGB")
 
-        if enhanced:
-            img = _enhance_image(img)
-
         if kind == "thumbnail":
             img = _resize_to_fit(img, max_thumb_px)
         elif kind == "preview":
             img = _resize_to_fit(img, max_preview_px)
-        else:
-            # enhanced full: keep original size
-            pass
 
         # save as JPEG for broad compatibility and good size
         out_path = paths.cache_path

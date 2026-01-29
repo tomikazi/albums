@@ -1,7 +1,7 @@
 [project]
 name = "albums"
 version = "0.1.0"
-description = "Lightweight photo albums web app with on-demand thumbnails/previews/enhancements"
+description = "Lightweight photo albums web app with on-demand thumbnails/previews"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

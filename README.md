@@ -1,14 +1,13 @@
 ## Albums Project
 
-Minimalist web app to browse scanned photo albums, with on-demand thumbnails/previews and optional enhanced rendering.
+Minimalist web app to browse scanned photo albums, with on-demand thumbnails/previews.
 
 ### Mounts / directories
 
 - **Source (read-only)**: `/photos/albums`
   - Expected structure: `/photos/albums/<album>/<photo>.jpg`
 - **Cache (read-write)**: `/cache`
-  - Originals: `/cache/original/albums/<album>/{thumbnails,previews}`
-  - Enhanced: `/cache/enhanced/albums/<album>/{thumbnails,previews,full}`
+  - Cache: `/cache/original/albums/<album>/{thumbnails,previews}`
 - **Users file**: `/config/users.txt` (simple `username:password` lines)
 
 ### Environment variables
@@ -50,5 +49,4 @@ Then open `http://<pi>:8080/`.
 ### Notes
 
 - Auth is intentionally simple (single users file); place this behind your LAN / VPN and preferably behind HTTPS (reverse proxy).
-- Enhancements are done on-demand via Pillow (autocontrast + modest contrast/sharpness + unsharp mask).
 
