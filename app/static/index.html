@@ -102,25 +102,31 @@
         <!-- Quick Preview modal (Top View) -->
         <div id="quickPreview" class="modal" style="display: none">
           <div class="modalBackdrop"></div>
-          <div class="modalCard">
-            <div class="modalTop">
-              <div class="modalTitle" id="quickTitle"></div>
-              <div class="spacer"></div>
-              <button id="quickDownloadBtn" class="iconBtn" title="Download">
-                <i data-lucide="download"></i>
-              </button>
-              <button id="quickCloseBtn" class="iconBtn" title="Close">
-                <i data-lucide="x"></i>
-              </button>
-            </div>
-            <div class="modalBody">
-              <button id="quickPrevBtn" class="navBtn" title="Previous">
-                <i data-lucide="chevron-left"></i>
-              </button>
+          <div class="modalCard modalCardQuick">
+            <div class="modalBody modalBodyQuick">
               <img id="quickImg" class="previewImg" alt="" />
-              <button id="quickNextBtn" class="navBtn" title="Next">
-                <i data-lucide="chevron-right"></i>
-              </button>
+              <div id="quickOverlay" class="quickOverlay">
+                <div class="overlayRow">
+                  <button id="quickPrevBtn" class="iconBtn" title="Previous">
+                    <i data-lucide="chevron-left"></i>
+                  </button>
+                  <button id="quickNextBtn" class="iconBtn" title="Next">
+                    <i data-lucide="chevron-right"></i>
+                  </button>
+                  <div class="spacer"></div>
+                  <span id="quickTitle" class="quickOverlayTitle"></span>
+                  <div class="spacer"></div>
+                  <button id="quickPlayBtn" class="iconBtn" title="Slideshow">
+                    <i data-lucide="play"></i>
+                  </button>
+                  <button id="quickDownloadBtn" class="iconBtn" title="Download">
+                    <i data-lucide="download"></i>
+                  </button>
+                  <button id="quickCloseBtn" class="iconBtn" title="Close">
+                    <i data-lucide="x"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

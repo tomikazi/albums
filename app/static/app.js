@@ -43,6 +43,18 @@ function imgUrl(kind, albumId, photoName) {
   return `${BASE_PATH}/download/${encodeURIComponent(albumId)}/${encodeURIComponent(photoName)}`;
 }
 
+/** Photo file name without extension for display in the UI. */
+function displayName(fileName) {
+  if (!fileName) return "";
+  return fileName.replace(/\.[^.]+$/, "") || fileName;
+}
+
+/** Truncate from the start, showing the tail with an ellipsis prefix. */
+function truncateFront(str, maxLen) {
+  if (!str || str.length <= maxLen) return str;
+  return "\u2026" + str.slice(-(maxLen - 1));
+}
+
 function setVisible(el, visible) {
   el.style.display = visible ? "" : "none";
 }
@@ -122,7 +134,7 @@ function renderThumbGrid() {
     img.src = imgUrl("thumbnail", albumId, name);
     const cap = document.createElement("div");
     cap.className = "cap";
-    cap.textContent = name;
+    cap.textContent = truncateFront(displayName(name), 30);
     div.appendChild(img);
     div.appendChild(cap);
     div.onclick = () => openQuickPreview(i);
@@ -144,7 +156,7 @@ function renderThumbStrip() {
     img.src = imgUrl("thumbnail", albumId, name);
     const cap = document.createElement("div");
     cap.className = "cap";
-    cap.textContent = name;
+    cap.textContent = truncateFront(displayName(name), 30);
     div.appendChild(img);
     div.appendChild(cap);
     div.onclick = () => setAlbumIndex(i);
@@ -158,7 +170,7 @@ function updatePreviewImage() {
   const name = state.photos[state.albumIndex];
   $("previewImg").src = imgUrl("preview", albumId, name);
   $("downloadBtn").onclick = () => window.open(imgUrl("download", albumId, name), "_blank");
-  $("albumTitle").textContent = `${state.activeAlbum.title} — ${name}`;
+  $("albumTitle").textContent = truncateFront(`${state.activeAlbum.title} — ${displayName(name)}`, 50);
   // update strip selection style
   renderThumbStrip();
   // ensure selected thumbnail is visible (use setTimeout to ensure DOM is updated)
@@ -197,6 +209,7 @@ function openQuickPreview(index) {
   state.quick.index = index;
   setVisible($("quickPreview"), true);
   renderQuickPreview();
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function closeQuickPreview() {
@@ -209,7 +222,7 @@ function renderQuickPreview() {
   if (!albumId || state.photos.length === 0) return;
   const name = state.photos[state.quick.index];
   $("quickImg").src = imgUrl("preview", albumId, name);
-  $("quickTitle").textContent = `${state.activeAlbum.title} — ${name}`;
+  $("quickTitle").textContent = truncateFront(displayName(name), 45);
   $("quickDownloadBtn").onclick = () =>
     window.open(imgUrl("download", albumId, name), "_blank");
 }
@@ -263,7 +276,7 @@ function updateSlideImage() {
   if (img) {
     img.src = imgUrl("download", albumId, name);
   }
-  if (titleEl) titleEl.textContent = name || "";
+  if (titleEl) titleEl.textContent = truncateFront(displayName(name), 45);
 }
 
 function slidePrev() {
@@ -384,6 +397,11 @@ async function initApp() {
 
   // Quick preview modal
   $("quickCloseBtn").onclick = () => closeQuickPreview();
+  $("quickPlayBtn").onclick = () => {
+    state.albumIndex = state.quick.index;
+    closeQuickPreview();
+    openSlideshow(true);
+  };
   $("quickPrevBtn").onclick = () => quickPrev();
   $("quickNextBtn").onclick = () => quickNext();
   $("quickPreview").addEventListener("click", (e) => {
