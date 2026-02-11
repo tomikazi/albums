@@ -15,6 +15,7 @@ const state = {
   slide: { open: false, playing: true, speed: 7, timer: null, overlayTimer: null, fromTopView: false },
   // Album list visibility
   albumListHidden: false,
+  searchQuery: "",
 };
 
 async function api(path, opts = {}) {
@@ -106,7 +107,11 @@ function showAlbumView() {
 function renderAlbums() {
   const list = $("albumList");
   list.innerHTML = "";
-  for (const a of state.albums) {
+  const q = (state.searchQuery || "").trim().toLowerCase();
+  const filtered = q
+    ? state.albums.filter((a) => a.title.toLowerCase().includes(q))
+    : state.albums;
+  for (const a of filtered) {
     const div = document.createElement("div");
     div.className = "albumItem" + (state.activeAlbum?.id === a.id ? " active" : "");
     div.textContent = a.title;
@@ -118,6 +123,8 @@ function renderAlbums() {
     };
     list.appendChild(div);
   }
+  const clearBtn = $("searchClearBtn");
+  if (clearBtn) clearBtn.style.display = $("searchWrap").style.display === "flex" ? "" : "none";
 }
 
 function renderThumbGrid() {
@@ -373,6 +380,33 @@ async function initApp() {
     } finally {
       showLogin("");
     }
+  };
+
+  // Search: toggle button shows search box; x in box hides it
+  $("searchToggleBtn").onclick = () => {
+    $("searchToggleBtn").style.display = "none";
+    const wrap = $("searchWrap");
+    wrap.style.display = "flex";
+    wrap.style.visibility = "visible";
+    $("searchClearBtn").style.display = "";
+    void wrap.offsetHeight; // force reflow so mobile Safari commits layout
+    setTimeout(() => {
+      $("searchInput").focus();
+    }, 0);
+    if (window.lucide) window.lucide.createIcons();
+  };
+  $("searchInput").oninput = () => {
+    state.searchQuery = $("searchInput").value;
+    renderAlbums();
+    if (window.lucide) window.lucide.createIcons();
+  };
+  $("searchClearBtn").onclick = () => {
+    state.searchQuery = "";
+    $("searchInput").value = "";
+    renderAlbums();
+    $("searchWrap").style.display = "none";
+    $("searchToggleBtn").style.display = "";
+    if (window.lucide) window.lucide.createIcons();
   };
 
   // Album list visibility toggle

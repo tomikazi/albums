@@ -36,6 +36,15 @@
         <div class="topbar">
           <div class="title" id="appTitle">Photo Albums</div>
           <div class="spacer"></div>
+          <button id="searchToggleBtn" class="iconBtn" title="Search">
+            <i data-lucide="search"></i>
+          </button>
+          <div id="searchWrap" class="searchWrap" style="display: none">
+            <input id="searchInput" type="text" placeholder="Search albums..." autocomplete="off" />
+            <button id="searchClearBtn" class="searchClearBtn" title="Close" type="button">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
           <button id="logoutBtn" class="iconBtn" title="Logout">
             <i data-lucide="log-out"></i>
           </button>
