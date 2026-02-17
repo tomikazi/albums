@@ -56,6 +56,32 @@ function truncateFront(str, maxLen) {
   return "\u2026" + str.slice(-(maxLen - 1));
 }
 
+/** Download image. Uses Web Share API on mobile so user can choose "Save Image" to add to Photos. */
+async function downloadImage(url, filename) {
+  try {
+    const res = await fetch(url, { credentials: "include" });
+    if (!res.ok) throw new Error(res.statusText);
+    const blob = await res.blob();
+    const file = new File([blob], filename || "image.jpg", { type: blob.type || "image/jpeg" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    }
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename || "image.jpg";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch (e) {
+    if (e.name === "AbortError") return; // user cancelled share
+    window.open(url, "_blank");
+  }
+}
+
 function setVisible(el, visible) {
   el.style.display = visible ? "" : "none";
 }
@@ -176,7 +202,7 @@ function updatePreviewImage() {
   if (!albumId || state.photos.length === 0) return;
   const name = state.photos[state.albumIndex];
   $("previewImg").src = imgUrl("preview", albumId, name);
-  $("downloadBtn").onclick = () => window.open(imgUrl("download", albumId, name), "_blank");
+  $("downloadBtn").onclick = () => downloadImage(imgUrl("download", albumId, name), name);
   $("albumTitle").textContent = truncateFront(`${state.activeAlbum.title} — ${displayName(name)}`, 50);
   // update strip selection style
   renderThumbStrip();
@@ -231,7 +257,7 @@ function renderQuickPreview() {
   $("quickImg").src = imgUrl("preview", albumId, name);
   $("quickTitle").textContent = truncateFront(displayName(name), 45);
   $("quickDownloadBtn").onclick = () =>
-    window.open(imgUrl("download", albumId, name), "_blank");
+    downloadImage(imgUrl("download", albumId, name), name);
 }
 
 function quickPrev() {
@@ -399,6 +425,12 @@ async function initApp() {
     state.searchQuery = $("searchInput").value;
     renderAlbums();
     if (window.lucide) window.lucide.createIcons();
+  };
+  $("searchInput").onfocus = () => {
+    if (state.albumListHidden) {
+      state.albumListHidden = false;
+      updateAlbumListVisibility();
+    }
   };
   $("searchClearBtn").onclick = () => {
     state.searchQuery = "";
