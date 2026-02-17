@@ -131,6 +131,8 @@ function showAlbumView() {
 }
 
 function renderAlbums() {
+  const titleEl = $("albumListTitle");
+  if (titleEl) titleEl.textContent = `${state.albums.length} Albums`;
   const list = $("albumList");
   list.innerHTML = "";
   const q = (state.searchQuery || "").trim().toLowerCase();
@@ -154,6 +156,8 @@ function renderAlbums() {
 }
 
 function renderThumbGrid() {
+  const header = $("thumbGridHeader");
+  if (header) header.textContent = `${state.photos.length} Photos`;
   const grid = $("thumbGrid");
   grid.innerHTML = "";
   const albumId = state.activeAlbum?.id;
@@ -176,6 +180,8 @@ function renderThumbGrid() {
 }
 
 function renderThumbStrip() {
+  const header = $("thumbStripHeader");
+  if (header) header.textContent = `${state.photos.length} Photos`;
   const strip = $("thumbStrip");
   strip.innerHTML = "";
   const albumId = state.activeAlbum?.id;
@@ -485,9 +491,19 @@ async function initApp() {
   };
   $("slideCloseBtn").onclick = () => closeSlideshow(true);
 
-  // Global keys (Top quick preview / Album / Slideshow)
+  // Global keys (Search / Top quick preview / Album / Slideshow)
   window.addEventListener("keydown", (e) => {
     if ($("loginView").style.display !== "none") return;
+
+    if (e.key === "Escape" && $("searchWrap").style.display === "flex") {
+      state.searchQuery = "";
+      $("searchInput").value = "";
+      renderAlbums();
+      $("searchWrap").style.display = "none";
+      $("searchToggleBtn").style.display = "";
+      $("searchInput").blur();
+      return;
+    }
 
     if (state.slide.open) {
       if (e.key === "Escape") return closeSlideshow(true);

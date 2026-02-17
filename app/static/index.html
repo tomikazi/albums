@@ -54,7 +54,7 @@
         <div id="topView" class="split">
           <div class="leftPane" id="topViewLeftPane">
             <div class="paneHeader">
-              <span>Photo Albums</span>
+              <span id="albumListTitle">Albums</span>
               <button id="hideAlbumListBtn" class="iconBtn" title="Hide album list">
                 <i data-lucide="list-indent-decrease"></i>
               </button>
@@ -66,7 +66,7 @@
               <button id="showAlbumListBtn" class="iconBtn" title="Show album list">
                 <i data-lucide="list-indent-increase"></i>
               </button>
-              <span>Thumbnails</span>
+              <span id="thumbGridHeader">Photos</span>
               <button id="topPlayBtn" class="iconBtn" title="Slideshow">
                 <i data-lucide="play"></i>
               </button>
@@ -78,7 +78,7 @@
         <!-- Album View -->
         <div id="albumView" class="split" style="display: none">
           <div class="leftPane">
-            <div class="paneHeader">Thumbnails</div>
+            <div class="paneHeader" id="thumbStripHeader">Photos</div>
             <div id="thumbStrip" class="thumbStrip"></div>
           </div>
           <div class="rightPane previewPane">
