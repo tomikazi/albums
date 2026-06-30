@@ -699,7 +699,7 @@ async function boot() {
     await applyRoute(route);
   } else if (state.albums.length > 0) {
     await selectAlbum(state.albums[0].id, false, { skipUrl: true });
-    showTopView({ skipUrl: true });
+    showTopView({ urlMode: "replace" });
   }
   if (window.lucide) window.lucide.createIcons();
 }
