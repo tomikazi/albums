@@ -108,7 +108,6 @@ async function applyRoute(route) {
       const photoIndex = state.photos.indexOf(route.photo);
       if (photoIndex >= 0) {
         state.albumIndex = photoIndex;
-        $("albumLeftHeader").textContent = `Thumbnails — ${state.activeAlbum.title}`;
         showAlbumView({ skipUrl: true });
         renderThumbStrip();
         updatePreviewImage();
@@ -392,7 +391,6 @@ function quickNext() {
 
 function enterAlbumViewFromTop(index) {
   state.albumIndex = index;
-  $("albumLeftHeader").textContent = `Thumbnails — ${state.activeAlbum.title}`;
   showAlbumView();
   renderThumbStrip();
   updatePreviewImage();
@@ -701,7 +699,7 @@ async function boot() {
     await applyRoute(route);
   } else if (state.albums.length > 0) {
     await selectAlbum(state.albums[0].id, false, { skipUrl: true });
-    showTopView({ skipUrl: true });
+    showTopView({ urlMode: "replace" });
   }
   if (window.lucide) window.lucide.createIcons();
 }
