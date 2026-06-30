@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import mimetypes
 import os
 from pathlib import Path
@@ -23,6 +24,20 @@ ROOT_PATH = settings.root_path  # e.g. "/albums" or ""
 COOKIE_NAME = "albums_session"
 COOKIE_PATH = ROOT_PATH if ROOT_PATH else "/"
 
+
+def _album_hash(album_id: str) -> str:
+    return hashlib.sha256(album_id.encode("utf-8")).hexdigest()[:8]
+
+
+def _index_html() -> HTMLResponse:
+    index_path = Path(__file__).parent / "static" / "index.html"
+    html = index_path.read_text(encoding="utf-8")
+    base_tag = f'<base href="{ROOT_PATH}/">' if ROOT_PATH else ""
+    script_tag = f'<script>window.BASE_PATH = "{ROOT_PATH}";</script>'
+    html = html.replace("<head>", f"<head>\n    {base_tag}\n    {script_tag}", 1)
+    return HTMLResponse(html)
+
+
 app = FastAPI(title="Albums", docs_url=None, redoc_url=None)
 router = APIRouter()
 
@@ -39,13 +54,14 @@ def _current_user(request: Request) -> str:
 
 @router.get("/", response_class=HTMLResponse)
 def index() -> HTMLResponse:
-    index_path = Path(__file__).parent / "static" / "index.html"
-    html = index_path.read_text(encoding="utf-8")
-    # Inject the base path for the frontend
-    base_tag = f'<base href="{ROOT_PATH}/">' if ROOT_PATH else ""
-    script_tag = f'<script>window.BASE_PATH = "{ROOT_PATH}";</script>'
-    html = html.replace("<head>", f"<head>\n    {base_tag}\n    {script_tag}", 1)
-    return HTMLResponse(html)
+    return _index_html()
+
+
+@router.get("/a/{album_hash}", response_class=HTMLResponse)
+@router.get("/a/{album_hash}/p/{photo}", response_class=HTMLResponse)
+def spa_route(album_hash: str, photo: str | None = None) -> HTMLResponse:
+    _ = album_hash, photo
+    return _index_html()
 
 
 @router.get("/app.js")
@@ -113,7 +129,7 @@ def albums(username: str = Depends(_current_user)) -> list[dict[str, str]]:
     _ = username
     out: list[dict[str, str]] = []
     for d in list_album_dirs(ALBUMS_SOURCE_DIR):
-        out.append({"id": d.name, "title": d.name})
+        out.append({"id": d.name, "title": d.name, "hash": _album_hash(d.name)})
     return out
 
 
