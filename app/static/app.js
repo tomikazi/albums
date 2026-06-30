@@ -108,7 +108,6 @@ async function applyRoute(route) {
       const photoIndex = state.photos.indexOf(route.photo);
       if (photoIndex >= 0) {
         state.albumIndex = photoIndex;
-        $("albumLeftHeader").textContent = `Thumbnails — ${state.activeAlbum.title}`;
         showAlbumView({ skipUrl: true });
         renderThumbStrip();
         updatePreviewImage();
@@ -392,7 +391,6 @@ function quickNext() {
 
 function enterAlbumViewFromTop(index) {
   state.albumIndex = index;
-  $("albumLeftHeader").textContent = `Thumbnails — ${state.activeAlbum.title}`;
   showAlbumView();
   renderThumbStrip();
   updatePreviewImage();
