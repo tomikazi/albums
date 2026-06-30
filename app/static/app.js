@@ -5,7 +5,7 @@ const BASE_PATH = window.BASE_PATH || "";
 
 const state = {
   albums: [],
-  activeAlbum: null, // {id,title}
+  activeAlbum: null, // {id,title,hash}
   photos: [],
   // Top quick preview
   quick: { open: false, index: 0 },
@@ -17,6 +17,111 @@ const state = {
   albumListHidden: false,
   searchQuery: "",
 };
+
+let suppressUrlUpdate = false;
+let routePushDepth = 0;
+
+function getAppPath() {
+  let path = window.location.pathname;
+  const base = BASE_PATH || "";
+  if (base && (path === base || path.startsWith(base + "/"))) {
+    path = path.slice(base.length) || "/";
+  }
+  return path;
+}
+
+function parseRoute(path) {
+  const match = path.match(/^\/a\/([^/]+)(?:\/p\/(.+))?$/);
+  if (!match) return null;
+  return {
+    albumHash: decodeURIComponent(match[1]),
+    photo: match[2] ? decodeURIComponent(match[2]) : null,
+  };
+}
+
+function findAlbumByHash(hash) {
+  return state.albums.find((a) => a.hash === hash) || null;
+}
+
+function buildRoutePath({ album, photo }) {
+  if (!album) return "/";
+  const base = `/a/${encodeURIComponent(album.hash)}`;
+  if (photo) return `${base}/p/${encodeURIComponent(photo)}`;
+  return base;
+}
+
+function currentPhotoName() {
+  if (state.photos.length === 0) return null;
+  if (state.quick.open) return state.photos[state.quick.index];
+  return state.photos[state.albumIndex];
+}
+
+function routeForCurrentView() {
+  const album = state.activeAlbum;
+  if (!album) return "/";
+  const inAlbumView = $("albumView").style.display !== "none";
+  const showPhoto =
+    state.quick.open || state.slide.open || (inAlbumView && state.photos.length > 0);
+  if (showPhoto) {
+    const photo = currentPhotoName();
+    if (photo) return buildRoutePath({ album, photo });
+  }
+  return buildRoutePath({ album });
+}
+
+function syncUrl(mode = "push") {
+  if (suppressUrlUpdate || $("loginView").style.display !== "none") return;
+  const target = (BASE_PATH || "") + routeForCurrentView();
+  if (window.location.pathname === target) return;
+  if (mode === "replace") history.replaceState(null, "", target);
+  else {
+    history.pushState(null, "", target);
+    routePushDepth++;
+  }
+}
+
+function appNavigateBack(fallback) {
+  if (routePushDepth > 0) {
+    history.back();
+    return;
+  }
+  fallback();
+}
+
+async function applyRoute(route) {
+  suppressUrlUpdate = true;
+  try {
+    const album = findAlbumByHash(route.albumHash);
+    if (!album) {
+      showTopView({ skipUrl: true });
+      if (state.albums.length > 0) {
+        await selectAlbum(state.albums[0].id, false, { skipUrl: true });
+      }
+      return;
+    }
+
+    if (state.activeAlbum?.id !== album.id) {
+      await selectAlbum(album.id, false, { skipUrl: true });
+    }
+
+    if (route.photo) {
+      const photoIndex = state.photos.indexOf(route.photo);
+      if (photoIndex >= 0) {
+        state.albumIndex = photoIndex;
+        $("albumLeftHeader").textContent = `Thumbnails — ${state.activeAlbum.title}`;
+        showAlbumView({ skipUrl: true });
+        renderThumbStrip();
+        updatePreviewImage();
+      } else {
+        showTopView({ skipUrl: true });
+      }
+    } else {
+      showTopView({ skipUrl: true });
+    }
+  } finally {
+    suppressUrlUpdate = false;
+  }
+}
 
 async function api(path, opts = {}) {
   const res = await fetch(BASE_PATH + path, {
@@ -97,15 +202,15 @@ function showLogin(errMsg = "") {
 function showApp() {
   setVisible($("loginView"), false);
   setVisible($("appView"), true);
-  showTopView();
 }
 
-function showTopView() {
+function showTopView(opts = {}) {
   setVisible($("topView"), true);
   setVisible($("albumView"), false);
-  closeQuickPreview();
-  closeSlideshow(false);
+  closeQuickPreview({ skipUrl: true });
+  closeSlideshow(false, { skipUrl: true });
   updateAlbumListVisibility();
+  if (!opts.skipUrl) syncUrl(opts.urlMode || "push");
 }
 
 function toggleAlbumList() {
@@ -123,11 +228,12 @@ function updateAlbumListVisibility() {
   }
 }
 
-function showAlbumView() {
+function showAlbumView(opts = {}) {
   setVisible($("topView"), false);
   setVisible($("albumView"), true);
-  closeQuickPreview();
-  closeSlideshow(false);
+  closeQuickPreview({ skipUrl: true });
+  closeSlideshow(false, { skipUrl: true });
+  if (!opts.skipUrl) syncUrl(opts.urlMode || "push");
 }
 
 function renderAlbums() {
@@ -220,14 +326,14 @@ function updatePreviewImage() {
   }, 0);
 }
 
-function setAlbumIndex(i) {
+function setAlbumIndex(i, opts = {}) {
   if (state.photos.length === 0) return;
   state.albumIndex = (i + state.photos.length) % state.photos.length;
   updatePreviewImage();
-  // scrolling is handled in updatePreviewImage()
+  if (!opts.skipUrl) syncUrl(opts.urlMode || "replace");
 }
 
-async function selectAlbum(albumId, goAlbumView) {
+async function selectAlbum(albumId, goAlbumView, opts = {}) {
   const album = state.albums.find((a) => a.id === albumId);
   if (!album) return;
   state.activeAlbum = album;
@@ -237,23 +343,26 @@ async function selectAlbum(albumId, goAlbumView) {
   renderThumbGrid();
   state.albumIndex = 0;
   if (goAlbumView) {
-    showAlbumView();
+    showAlbumView({ skipUrl: true });
     renderThumbStrip();
     updatePreviewImage();
   }
+  if (!opts.skipUrl) syncUrl(goAlbumView ? "push" : "push");
 }
 
-function openQuickPreview(index) {
+function openQuickPreview(index, opts = {}) {
   state.quick.open = true;
   state.quick.index = index;
   setVisible($("quickPreview"), true);
   renderQuickPreview();
   if (window.lucide) window.lucide.createIcons();
+  if (!opts.skipUrl) syncUrl(opts.urlMode || "push");
 }
 
-function closeQuickPreview() {
+function closeQuickPreview(opts = {}) {
   state.quick.open = false;
   setVisible($("quickPreview"), false);
+  if (!opts.skipUrl) syncUrl(opts.urlMode || "push");
 }
 
 function renderQuickPreview() {
@@ -270,12 +379,14 @@ function quickPrev() {
   if (!state.quick.open) return;
   state.quick.index = (state.quick.index - 1 + state.photos.length) % state.photos.length;
   renderQuickPreview();
+  syncUrl("replace");
 }
 
 function quickNext() {
   if (!state.quick.open) return;
   state.quick.index = (state.quick.index + 1) % state.photos.length;
   renderQuickPreview();
+  syncUrl("replace");
 }
 
 
@@ -320,13 +431,13 @@ function updateSlideImage() {
 
 function slidePrev() {
   if (!state.slide.open) return;
-  setAlbumIndex(state.albumIndex - 1);
+  setAlbumIndex(state.albumIndex - 1, { urlMode: "replace" });
   updateSlideImage();
 }
 
 function slideNext() {
   if (!state.slide.open) return;
-  setAlbumIndex(state.albumIndex + 1);
+  setAlbumIndex(state.albumIndex + 1, { urlMode: "replace" });
   updateSlideImage();
 }
 
@@ -359,9 +470,10 @@ function openSlideshow(fromTopView = false) {
   updateSlideImage();
   setSlidePlaying(true);
   showOverlay();
+  syncUrl("push");
 }
 
-function closeSlideshow(returnToPrevious = true) {
+function closeSlideshow(returnToPrevious = true, opts = {}) {
   if (!state.slide.open) return;
   const wasFromTopView = state.slide.fromTopView;
   state.slide.open = false;
@@ -372,10 +484,11 @@ function closeSlideshow(returnToPrevious = true) {
   setVisible($("slideshow"), false);
   if (returnToPrevious) {
     if (wasFromTopView) {
-      showTopView();
+      showTopView({ skipUrl: true });
     } else {
-      showAlbumView();
+      showAlbumView({ skipUrl: true });
     }
+    if (!opts.skipUrl) syncUrl("push");
   }
 }
 
@@ -410,6 +523,9 @@ async function initApp() {
     try {
       await api("/logout", { method: "POST", body: "{}" });
     } finally {
+      suppressUrlUpdate = true;
+      history.replaceState(null, "", BASE_PATH || "/");
+      suppressUrlUpdate = false;
       showLogin("");
     }
   };
@@ -460,7 +576,7 @@ async function initApp() {
   };
 
   // Album view buttons
-  $("backBtn").onclick = () => showTopView();
+  $("backBtn").onclick = () => appNavigateBack(() => showTopView({ urlMode: "replace" }));
   $("prevBtn").onclick = () => setAlbumIndex(state.albumIndex - 1);
   $("nextBtn").onclick = () => setAlbumIndex(state.albumIndex + 1);
   $("playBtn").onclick = () => {
@@ -468,7 +584,7 @@ async function initApp() {
   };
 
   // Quick preview modal
-  $("quickCloseBtn").onclick = () => closeQuickPreview();
+  $("quickCloseBtn").onclick = () => appNavigateBack(() => closeQuickPreview({ urlMode: "replace" }));
   $("quickPlayBtn").onclick = () => {
     state.albumIndex = state.quick.index;
     closeQuickPreview();
@@ -477,7 +593,9 @@ async function initApp() {
   $("quickPrevBtn").onclick = () => quickPrev();
   $("quickNextBtn").onclick = () => quickNext();
   $("quickPreview").addEventListener("click", (e) => {
-    if (e.target.classList.contains("modalBackdrop")) closeQuickPreview();
+    if (e.target.classList.contains("modalBackdrop")) {
+      appNavigateBack(() => closeQuickPreview({ urlMode: "replace" }));
+    }
   });
 
   // Slideshow overlay + controls
@@ -531,7 +649,7 @@ async function initApp() {
     }
 
     if (state.quick.open) {
-      if (e.key === "Escape") return closeQuickPreview();
+      if (e.key === "Escape") return appNavigateBack(() => closeQuickPreview({ urlMode: "replace" }));
       if (e.key === "ArrowLeft") return quickPrev();
       if (e.key === "ArrowRight") return quickNext();
       if (e.key === "Enter") return enterAlbumViewFromTop(state.quick.index);
@@ -539,7 +657,7 @@ async function initApp() {
     }
 
     if ($("albumView").style.display !== "none") {
-      if (e.key === "Escape") return showTopView();
+      if (e.key === "Escape") return appNavigateBack(() => showTopView({ urlMode: "replace" }));
       if (e.key === "ArrowLeft") return setAlbumIndex(state.albumIndex - 1);
       if (e.key === "ArrowRight") return setAlbumIndex(state.albumIndex + 1);
     }
@@ -547,6 +665,25 @@ async function initApp() {
 
   // Double click on quick image enters album view
   $("quickImg").ondblclick = () => enterAlbumViewFromTop(state.quick.index);
+
+  window.addEventListener("popstate", async () => {
+    if ($("loginView").style.display !== "none") return;
+    if (routePushDepth > 0) routePushDepth--;
+    const route = parseRoute(getAppPath());
+    if (route) {
+      await applyRoute(route);
+      return;
+    }
+    suppressUrlUpdate = true;
+    try {
+      showTopView({ skipUrl: true });
+      if (state.albums.length > 0 && !state.activeAlbum) {
+        await selectAlbum(state.albums[0].id, false, { skipUrl: true });
+      }
+    } finally {
+      suppressUrlUpdate = false;
+    }
+  });
 }
 
 async function boot() {
@@ -558,8 +695,13 @@ async function boot() {
   showApp();
   state.albums = await api("/albums");
   renderAlbums();
-  if (state.albums.length > 0) {
-    await selectAlbum(state.albums[0].id, false);
+
+  const route = parseRoute(getAppPath());
+  if (route) {
+    await applyRoute(route);
+  } else if (state.albums.length > 0) {
+    await selectAlbum(state.albums[0].id, false, { skipUrl: true });
+    showTopView({ skipUrl: true });
   }
   if (window.lucide) window.lucide.createIcons();
 }
